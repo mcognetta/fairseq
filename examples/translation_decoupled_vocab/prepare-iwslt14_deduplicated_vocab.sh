@@ -116,11 +116,11 @@ BPE_VOCAB=$prep/vocab
 
 echo "learn_BPE for src: $src"
 # python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $SRC_BPE_TOKENS < $tmp/train.$src > $BPE_CODE.$src
-python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$src -s $SRC_BPE_TOKENS -o $BPE_CODE.$src --write-vocabulary $BPE_VOCAB.$src
+python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$src -s $SRC_BPE_TOKENS -t -o $BPE_CODE.$src --write-vocabulary $BPE_VOCAB.$src
 
 echo "learn_BPE for tgt: $tgt"
 # python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $TGT_BPE_TOKENS < $tmp/train.$tgt > $BPE_CODE.$tgt
-python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$tgt -s $TGT_BPE_TOKENS -o $BPE_CODE.$tgt --write-vocabulary $BPE_VOCAB.$tgt
+python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$tgt -s $TGT_BPE_TOKENS -t -o $BPE_CODE.$tgt --write-vocabulary $BPE_VOCAB.$tgt
 
 
 # echo "learn_bpe.py on ${TRAIN}..."
@@ -128,7 +128,7 @@ python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$tgt -s $TGT_BP
 
 for L in $src $tgt; do
     for f in train.$L valid.$L test.$L; do
-        echo "apply_bpe.py to ${f}..."
-        python $BPEROOT/apply_bpe.py -c $BPE_CODE.$l < $tmp/$f > $prep/$f
+        echo "apply_bpe.py (${L}) to ${f}..."
+        python $BPEROOT/apply_bpe.py -c $BPE_CODE.$L < $tmp/$f > $prep/$f
     done
 done

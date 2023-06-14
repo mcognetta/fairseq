@@ -99,8 +99,8 @@ def learn_joint_bpe_and_vocab(args):
         full_character_vocab = full_character_vocab | cv
         f.seek(0)
 
-    for c in full_vocab:
-        full_vocab[c] += 1
+    # for c in full_vocab:
+    #     full_vocab[c] += 1
     for c in full_character_vocab:
         if c not in full_vocab:
             print(f"{c} not found in vocab")

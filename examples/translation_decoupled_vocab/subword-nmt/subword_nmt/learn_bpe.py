@@ -90,6 +90,7 @@ def get_vocabulary(fobj, is_dict=False, num_workers=1):
             vocab[word] += int(count)
             for c in word:
                 character_vocab.add(c)
+                character_vocab.add(c + "@@")
     elif num_workers == 1 or fobj.name == '<stdin>':
         if num_workers > 1:
             warnings.warn("In parallel mode, the input cannot be STDIN. Using 1 processor instead.")
@@ -99,6 +100,7 @@ def get_vocabulary(fobj, is_dict=False, num_workers=1):
                     vocab[word] += 1
                     for c in word:
                         character_vocab.add(c)
+                        character_vocab.add(c + "@@")
     elif num_workers > 1:
 
         if sys.version_info < (3, 0):
@@ -159,6 +161,7 @@ def _get_vocabulary(infile, outfile, begin, end):
                 if word:
                     for c in word:
                         character_vocab.add(c)
+                        character_vocab.add(c + "@@")
                     vocab[word] += 1
             line = f.readline()
     with open(outfile, 'wb') as f:
