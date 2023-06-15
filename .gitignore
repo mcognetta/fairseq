@@ -142,3 +142,11 @@ outputs
 
 # CHECKPOINT DATA
 *.pt
+
+*/*/data-bin/
+examples/*/data-bin
+examples/translation_decoupled_vocab/orig
+examples/translation_decoupled_vocab/*/tmp/
+examples/translation_decoupled_vocab/*/train.*
+examples/translation_decoupled_vocab/*/test.*
+examples/translation_decoupled_vocab/*/valid.*
