@@ -5,19 +5,15 @@
 echo 'Cloning Moses github repository (for tokenization scripts)...'
 git clone https://github.com/moses-smt/mosesdecoder.git
 
-# echo 'Cloning Subword NMT repository (for BPE pre-processing)...'
-# git clone https://github.com/rsennrich/subword-nmt.git
+echo 'Cloning Subword NMT repository (for BPE pre-processing)...'
+git clone https://github.com/rsennrich/subword-nmt.git
 
 SCRIPTS=mosesdecoder/scripts
 TOKENIZER=$SCRIPTS/tokenizer/tokenizer.perl
 LC=$SCRIPTS/tokenizer/lowercase.perl
 CLEAN=$SCRIPTS/training/clean-corpus-n.perl
 BPEROOT=subword-nmt/subword_nmt
-#BPE_TOKENS=10000
-SRC_BPE_TOKENS=10000
-TGT_BPE_TOKENS=10000
-
-EXPERIMENT_NAME="new_decoupled_experiment_10k_10k.de-en"
+BPE_TOKENS=10000
 
 URL="http://dl.fbaipublicfiles.com/fairseq/data/iwslt14/de-en.tgz"
 GZ=de-en.tgz
@@ -31,7 +27,7 @@ fi
 src=de
 tgt=en
 lang=de-en
-prep=$EXPERIMENT_NAME
+prep=iwslt14.tokenized.de-en
 tmp=$prep/tmp
 orig=orig
 
@@ -104,31 +100,21 @@ done
 
 # TRAIN=$tmp/train.en-de
 BPE_CODE=$prep/code
-BPE_VOCAB=$prep/vocab
 # rm -f $TRAIN
 # for l in $src $tgt; do
 #     cat $tmp/train.$l >> $TRAIN
 # done
-# for l in $src $tgt; do
-#     echo "learn_BPE for $l"
-#     python3 $BPEROOT/learn_bpe.py -s $BPE_TOKENS < $tmp/train.$l > $BPE_CODE.$l
-# done
-
-echo "learn_BPE for src: $src"
-# python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $SRC_BPE_TOKENS < $tmp/train.$src > $BPE_CODE.$src
-python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$src -s $SRC_BPE_TOKENS -t -o $BPE_CODE.$src --write-vocabulary $BPE_VOCAB.$src
-
-echo "learn_BPE for tgt: $tgt"
-# python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $TGT_BPE_TOKENS < $tmp/train.$tgt > $BPE_CODE.$tgt
-python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$tgt -s $TGT_BPE_TOKENS -t -o $BPE_CODE.$tgt --write-vocabulary $BPE_VOCAB.$tgt
-
+for l in $src $tgt; do
+    echo "learn_BPE for $l"
+    python3 $BPEROOT/learn_bpe.py -t $BPE_TOKENS < $tmp/train.$l > $BPE_CODE.$l
+done
 
 # echo "learn_bpe.py on ${TRAIN}..."
 # python $BPEROOT/learn_bpe.py -s $BPE_TOKENS < $TRAIN > $BPE_CODE
 
 for L in $src $tgt; do
     for f in train.$L valid.$L test.$L; do
-        echo "apply_bpe.py (${L}) to ${f}..."
-        python $BPEROOT/apply_bpe.py -c $BPE_CODE.$L < $tmp/$f > $prep/$f
+        echo "apply_bpe.py to ${f}..."
+        python $BPEROOT/apply_bpe.py -c $BPE_CODE.$l < $tmp/$f > $prep/$f
     done
 done

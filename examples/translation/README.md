@@ -120,7 +120,7 @@ fairseq-preprocess --source-lang de --target-lang en \
 
 Next we'll train a Transformer translation model over this data:
 ```bash
-CUDA_VISIBLE_DEVICES=0 fairseq-train \
+CUDA_VISIBLE_DEVICES=0; nohup fairseq-train \
     data-bin/iwslt14.tokenized.de-en \
     --arch transformer_iwslt_de_en --share-decoder-input-output-embed \
     --optimizer adam --adam-betas '(0.9, 0.98)' --clip-norm 0.0 \
@@ -133,7 +133,8 @@ CUDA_VISIBLE_DEVICES=0 fairseq-train \
     --eval-bleu-detok moses \
     --eval-bleu-remove-bpe \
     --eval-bleu-print-samples \
-    --best-checkpoint-metric bleu --maximize-best-checkpoint-metric
+    --best-checkpoint-metric bleu --maximize-best-checkpoint-metric --patience 5 \
+    --save-dir 0607_patience_test_checkpoints &
 ```
 
 Finally we can evaluate our trained model:
