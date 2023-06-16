@@ -699,6 +699,8 @@ class Trainer(object):
         shard_batch_itr=True,
         disable_iterator_cache=False,
     ):
+        
+        # HERE MARCO
         """Return an EpochBatchIterator over the training set for a given epoch."""
         if load_dataset:
             logger.info("loading train data for epoch {}".format(epoch))

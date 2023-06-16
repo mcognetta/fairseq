@@ -126,10 +126,15 @@ class FairseqTask(object):
             cfg (omegaconf.DictConfig): parsed command-line arguments
         """
         return cls(cfg, **kwargs)
-
+    # HERE MARCO
     def has_sharded_data(self, split):
         return os.pathsep in getattr(self.cfg, "data", "")
-
+    
+    # HERE MARCO
+    def has_non_static_dataset(self):
+        return False
+    
+    # HERE MARCO
     def load_dataset(
         self,
         split: str,

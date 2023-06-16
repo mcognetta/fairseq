@@ -212,7 +212,9 @@ def main(cfg: FairseqConfig) -> None:
         epoch_itr = trainer.get_train_iterator(
             epoch_itr.next_epoch_idx,
             # sharded data: get train iterator for next epoch
-            load_dataset=task.has_sharded_data("train"),
+
+            # HERE MARCO
+            load_dataset=task.has_sharded_data("train") or task.has_non_static_dataset(),
             # don't cache epoch iterators for sharded datasets
             disable_iterator_cache=task.has_sharded_data("train"),
         )
