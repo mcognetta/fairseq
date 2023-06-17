@@ -14,10 +14,10 @@ LC=$SCRIPTS/tokenizer/lowercase.perl
 CLEAN=$SCRIPTS/training/clean-corpus-n.perl
 BPEROOT=subword-nmt/subword_nmt
 #BPE_TOKENS=10000
-SRC_BPE_TOKENS=7000
-TGT_BPE_TOKENS=7000
+SRC_BPE_TOKENS=10000
+TGT_BPE_TOKENS=5000
 
-EXPERIMENT_NAME="test_double_dropout_7k_7k.de-en"
+EXPERIMENT_NAME="test_double_dropout_10k_5k.de-en"
 
 URL="http://dl.fbaipublicfiles.com/fairseq/data/iwslt14/de-en.tgz"
 GZ=de-en.tgz

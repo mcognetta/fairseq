@@ -14,10 +14,10 @@ LC=$SCRIPTS/tokenizer/lowercase.perl
 CLEAN=$SCRIPTS/training/clean-corpus-n.perl
 BPEROOT=subword-nmt/subword_nmt
 #BPE_TOKENS=10000
-SRC_BPE_TOKENS=7000
-TGT_BPE_TOKENS=7000
+SRC_BPE_TOKENS=3000
+TGT_BPE_TOKENS=3000
 
-EXPERIMENT_NAME="new_decoupled_experiment_7k_7k.de-en"
+EXPERIMENT_NAME="test_multiple_loads_3k_3k.de-en"
 
 URL="http://dl.fbaipublicfiles.com/fairseq/data/iwslt14/de-en.tgz"
 GZ=de-en.tgz
@@ -136,13 +136,22 @@ done
 cd ../..
 
 TEXT=examples/translation_decoupled_vocab/$EXPERIMENT_NAME
-fairseq-preprocess --source-lang de --target-lang en \
-    --srcdict examples/translation_decoupled_vocab/$EXPERIMENT_NAME/vocab.de \
-    --tgtdict examples/translation_decoupled_vocab/$EXPERIMENT_NAME/vocab.en \
+fairseq-preprocess --source-lang $src --target-lang $tgt \
+    --srcdict examples/translation_decoupled_vocab/$EXPERIMENT_NAME/vocab.$src \
+    --tgtdict examples/translation_decoupled_vocab/$EXPERIMENT_NAME/vocab.$tgt \
     --trainpref $TEXT/train --validpref $TEXT/valid --testpref $TEXT/test \
     --destdir examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME \
     --workers 20
 
+cp ${TEXT}/train.$src examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/train.raw.$src
+cp ${TEXT}/train.$tgt examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/train.raw.$tgt
+
+cp ${TEXT}/vocab.$src ${TEXT}/vocab.$tgt examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/
+cp ${TEXT}/code.$src ${TEXT}/code.$tgt examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/
+
+
+sed -i -r 's/(@@ )|(@@ ?$)//g' examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/train.raw.$src
+sed -i -r 's/(@@ )|(@@ ?$)//g' examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/train.raw.$tgt
 
 CUDA_VISIBLE_DEVICES=0; nohup fairseq-train  examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME \
                                             --arch transformer_iwslt_de_en \
@@ -166,7 +175,7 @@ CUDA_VISIBLE_DEVICES=0; nohup fairseq-train  examples/translation_decoupled_voca
                                             --maximize-best-checkpoint-metric \
                                             --patience 5  \
                                             --save-dir "${EXPERIMENT_NAME}_checkpoints" \
-                                            --source-lang=de \
-                                            --target-lang=en \
+                                            --source-lang=$src \
+                                            --target-lang=$tgt \
                                             --task "translation" \
                                             --no-epoch-checkpoints > $EXPERIMENT_NAME.log &
