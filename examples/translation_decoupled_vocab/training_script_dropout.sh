@@ -14,10 +14,23 @@ LC=$SCRIPTS/tokenizer/lowercase.perl
 CLEAN=$SCRIPTS/training/clean-corpus-n.perl
 BPEROOT=subword-nmt/subword_nmt
 #BPE_TOKENS=10000
-SRC_BPE_TOKENS=10000
-TGT_BPE_TOKENS=5000
+SRC_BPE_TOKENS=3000
+TGT_BPE_TOKENS=3000
+SRC_DROPOUT=0.1
+TGT_DROPOUT=0.0
+SRC_THRESHOLD=0
+TGT_THRESHOLD=0
+SEED=0
+DEVICE=0
 
-EXPERIMENT_NAME="test_double_dropout_10k_5k.de-en"
+
+src=de
+tgt=en
+lang=de-en
+
+EXPERIMENT_PREFIX="single_dropout_test"
+EXPERIMENT_NAME="${EXPERIMENT_PREFIX}_BPE_${SRC_BPE_TOKENS}_${TGT_BPE_TOKENS}_thresholds_${SRC_THRESHOLD}_${TGT_THRESHOLD}_dropout_${SRC_DROPOUT}_${TGT_DROPOUT}_seed_${SEED}.${lang}"
+
 
 URL="http://dl.fbaipublicfiles.com/fairseq/data/iwslt14/de-en.tgz"
 GZ=de-en.tgz
@@ -28,9 +41,6 @@ if [ ! -d "$SCRIPTS" ]; then
 fi
 
 
-src=de
-tgt=en
-lang=de-en
 prep=$EXPERIMENT_NAME
 tmp=$prep/tmp
 orig=orig
@@ -153,7 +163,7 @@ cp ${TEXT}/code.$src ${TEXT}/code.$tgt examples/translation_decoupled_vocab/data
 sed -i -r 's/(@@ )|(@@ ?$)//g' examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/train.raw.$src
 sed -i -r 's/(@@ )|(@@ ?$)//g' examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/train.raw.$tgt
 
-CUDA_VISIBLE_DEVICES=0; nohup fairseq-train  examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME \
+CUDA_VISIBLE_DEVICES=$DEVICE; nohup fairseq-train  examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME \
                                             --arch transformer_iwslt_de_en \
                                             --share-decoder-input-output-embed \
                                             --optimizer adam --adam-betas '(0.9, 0.98)' \
@@ -178,4 +188,7 @@ CUDA_VISIBLE_DEVICES=0; nohup fairseq-train  examples/translation_decoupled_voca
                                             --source-lang=$src \
                                             --target-lang=$tgt \
                                             --task "translation-with-subword-regularization" \
+                                            --seed $SEED \
+                                            --src-dropout $SRC_DROPOUT \
+                                            --tgt-dropout $TGT_DROPOUT \
                                             --no-epoch-checkpoints > $EXPERIMENT_NAME.log &
