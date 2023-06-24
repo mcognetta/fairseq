@@ -66,6 +66,8 @@ def retokenize_and_load_langpair_dataset(
     # TODO ADD SEED FOR DROPOUT(s)
     # src_dropout_seed = 0,
     # tgt_dropout_seed = 0,
+    src_threshold=0,
+    tgt_threshold=0,
 ):
     BPE_DIR = "/home/marco/github/fairseq/examples/translation_decoupled_vocab/subword-nmt/subword_nmt"
 
@@ -83,26 +85,28 @@ def retokenize_and_load_langpair_dataset(
 
     if src_dropout > 0.0:
         os.system(
-            f"python3 {BPE_DIR}/apply_bpe.py --dropout {src_dropout} -c {src_code_path} < {src_raw_path} > {src_tokenized_path}"
+            f"python3 {BPE_DIR}/apply_bpe.py --dropout {src_dropout} -c {src_code_path} --vocabulary {src_vocab_path} --vocabulary-threshold {src_threshold} < {src_raw_path} > {src_tokenized_path}"
         )
     else:
         os.system(
-            f"python3 {BPE_DIR}/apply_bpe.py -c {src_code_path} < {src_raw_path} > {src_tokenized_path}"
+            f"python3 {BPE_DIR}/apply_bpe.py -c {src_code_path} --vocabulary {src_vocab_path} --vocabulary-threshold {src_threshold} < {src_raw_path} > {src_tokenized_path}"
         )
 
     if tgt_dropout > 0.0:
         os.system(
-            f"python3 {BPE_DIR}/apply_bpe.py --dropout {tgt_dropout} -c {tgt_code_path} < {tgt_raw_path} > {tgt_tokenized_path}"
+            f"python3 {BPE_DIR}/apply_bpe.py --dropout {tgt_dropout} --vocabulary {tgt_vocab_path} --vocabulary-threshold {tgt_threshold} -c {tgt_code_path} < {tgt_raw_path} > {tgt_tokenized_path}"
         )
     else:
         os.system(
-            f"python3 {BPE_DIR}/apply_bpe.py -c {tgt_code_path} < {tgt_raw_path} > {tgt_tokenized_path}"
+            f"python3 {BPE_DIR}/apply_bpe.py -c {tgt_code_path} --vocabulary {tgt_vocab_path} --vocabulary-threshold {tgt_threshold} < {tgt_raw_path} > {tgt_tokenized_path}"
         )
 
     os.system(
-        f"fairseq-preprocess --source-lang {src} --target-lang {tgt} --srcdict {src_vocab_path} --tgtdict {tgt_vocab_path} --trainpref {os.path.join(data_path, 'train')} --destdir {data_path} --workers 20"
+        f"fairseq-preprocess --source-lang {src} --target-lang {tgt} --srcdict {src_vocab_path} --tgtdict {tgt_vocab_path} --thresholdsrc {src_threshold} --thresholdtgt {tgt_threshold} --trainpref {os.path.join(data_path, 'train')} --destdir {data_path} --workers 20"
     )
-
+    # os.system(
+    #     f"fairseq-preprocess --source-lang {src} --target-lang {tgt} --thresholdsrc {src_threshold} --thresholdtgt {tgt_threshold} --trainpref {os.path.join(data_path, 'train')} --destdir {data_path} --workers 20"
+    # )
     logger.info("MARCO: LOAD LANG PAIR DATASET")
 
     # maybe replace with translation.load_langpair_dataset(......)
@@ -334,6 +338,8 @@ class TranslationWithSubwordRegularizationTask(translation.TranslationTask):
                 pad_to_multiple=self.cfg.required_seq_len_multiple,
                 src_dropout=self.cfg.src_dropout,
                 tgt_dropout=self.cfg.tgt_dropout,
+                src_threshold=self.cfg.src_threshold,
+                tgt_threshold=self.cfg.tgt_threshold,
             )
         else:
             logging.info("MARCO LOADING ALREADY MADE DATASET")
