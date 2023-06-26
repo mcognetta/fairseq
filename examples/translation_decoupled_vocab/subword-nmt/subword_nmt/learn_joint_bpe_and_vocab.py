@@ -77,7 +77,7 @@ def create_parser(subparsers=None):
     parser.add_argument(
         '--verbose', '-v', action="store_true",
         help="verbose mode.")
-    parser.add_argument('--character-default-increase', type=int, default=1, help="the amount to increase raw character counts. use this so that characters don't get set to unk by the vocabulary-threshold flag")
+    # parser.add_argument('--character-default-increase', type=int, default=1, help="the amount to increase raw character counts. use this so that characters don't get set to unk by the vocabulary-threshold flag")
     parser.add_argument('--vocabulary-dump-threshold', type=int, default=0, help="only write tokens that have count more than this threshold")
 
     return parser
@@ -145,12 +145,14 @@ def learn_joint_bpe_and_vocab(args):
         for c in character_vocab:
             if c not in vocab:
                 print(f"{c} not found in vocab")
-                vocab[c] = args.character_default_increase
+                # vocab[c] = args.character_default_increase
+                vocab[c] = 1
             else:
-                vocab[c] += args.character_default_increase
+                # vocab[c] += args.character_default_increase
+                vocab[c] += 1
 
         for key, freq in sorted(vocab.items(), key=lambda x: x[1], reverse=True):
-            if freq > args.vocabulary_dump_threshold:
+            if freq > args.vocabulary_dump_threshold or key in character_vocab:
                 vocab_file.write("{0} {1}\n".format(key, freq))
         train_file.close()
         vocab_file.close()

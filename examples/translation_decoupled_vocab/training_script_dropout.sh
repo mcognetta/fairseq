@@ -14,13 +14,13 @@ LC=$SCRIPTS/tokenizer/lowercase.perl
 CLEAN=$SCRIPTS/training/clean-corpus-n.perl
 BPEROOT=subword-nmt/subword_nmt
 #BPE_TOKENS=10000
-SRC_BPE_TOKENS=3000
-TGT_BPE_TOKENS=3000
-SRC_DROPOUT=0.1
+SRC_BPE_TOKENS=8000
+TGT_BPE_TOKENS=10000
+SRC_DROPOUT=0.0
 TGT_DROPOUT=0.0
-SRC_THRESHOLD=0
-TGT_THRESHOLD=0
-SEED=0
+SRC_THRESHOLD=40
+TGT_THRESHOLD=30
+SEED=2
 DEVICE=0
 
 
@@ -28,7 +28,7 @@ src=de
 tgt=en
 lang=de-en
 
-EXPERIMENT_PREFIX="single_dropout_test"
+EXPERIMENT_PREFIX="fixed_character_dump_threshold_test"
 EXPERIMENT_NAME="${EXPERIMENT_PREFIX}_BPE_${SRC_BPE_TOKENS}_${TGT_BPE_TOKENS}_thresholds_${SRC_THRESHOLD}_${TGT_THRESHOLD}_dropout_${SRC_DROPOUT}_${TGT_DROPOUT}_seed_${SEED}.${lang}"
 
 
@@ -126,39 +126,48 @@ BPE_VOCAB=$prep/vocab
 
 echo "learn_BPE for src: $src"
 # python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $SRC_BPE_TOKENS < $tmp/train.$src > $BPE_CODE.$src
-python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$src -s $SRC_BPE_TOKENS -t -o $BPE_CODE.$src --write-vocabulary $BPE_VOCAB.$src
+python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$src -s $SRC_BPE_TOKENS --vocabulary-dump-threshold $SRC_THRESHOLD -t -o $BPE_CODE.$src --write-vocabulary $BPE_VOCAB.$src
 
 echo "learn_BPE for tgt: $tgt"
 # python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $TGT_BPE_TOKENS < $tmp/train.$tgt > $BPE_CODE.$tgt
-python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$tgt -s $TGT_BPE_TOKENS -t -o $BPE_CODE.$tgt --write-vocabulary $BPE_VOCAB.$tgt
+python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$tgt -s $TGT_BPE_TOKENS --vocabulary-dump-threshold $TGT_THRESHOLD -t -o $BPE_CODE.$tgt --write-vocabulary $BPE_VOCAB.$tgt
 
 
 # echo "learn_bpe.py on ${TRAIN}..."
 # python $BPEROOT/learn_bpe.py -s $BPE_TOKENS < $TRAIN > $BPE_CODE
 
-for L in $src $tgt; do
-    for f in train.$L valid.$L test.$L; do
-        echo "apply_bpe.py (${L}) to ${f}..."
-        python $BPEROOT/apply_bpe.py -c $BPE_CODE.$L < $tmp/$f > $prep/$f
-    done
+# for L in $src $tgt; do
+#     for f in train.$L valid.$L test.$L; do
+#         echo "apply_bpe.py (${L}) to ${f}..."
+#         python $BPEROOT/apply_bpe.py -c $BPE_CODE.$L --vocabulary $BPE_VOCAB.$L --vocabulary-threshold {tgt_threshold} < $tmp/$f > $prep/$f
+#     done
+# done
+
+for f in train valid test; do
+    echo "apply_bpe.py ($src) to ${f}.${src}..."
+    python $BPEROOT/apply_bpe.py -c $BPE_CODE.$src --vocabulary $BPE_VOCAB.$src < $tmp/$f.$src > $prep/$f.$src
+
+    echo "apply_bpe.py ($tgt) to ${f}.${tgt}..."
+    python $BPEROOT/apply_bpe.py -c $BPE_CODE.$tgt --vocabulary $BPE_VOCAB.$tgt < $tmp/$f.$tgt > $prep/$f.$tgt
 done
 
 cd ../..
 
 TEXT=examples/translation_decoupled_vocab/$EXPERIMENT_NAME
 fairseq-preprocess --source-lang $src --target-lang $tgt \
-    --srcdict examples/translation_decoupled_vocab/$EXPERIMENT_NAME/vocab.$src \
-    --tgtdict examples/translation_decoupled_vocab/$EXPERIMENT_NAME/vocab.$tgt \
     --trainpref $TEXT/train --validpref $TEXT/valid --testpref $TEXT/test \
     --destdir examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME \
-    --workers 20
+    --workers 20 \
+    --srcdict examples/translation_decoupled_vocab/$EXPERIMENT_NAME/vocab.$src \
+    --tgtdict examples/translation_decoupled_vocab/$EXPERIMENT_NAME/vocab.$tgt
+    # --thresholdsrc $SRC_THRESHOLD \
+    # --thresholdtgt $TGT_THRESHOLD \
 
 cp ${TEXT}/train.$src examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/train.raw.$src
 cp ${TEXT}/train.$tgt examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/train.raw.$tgt
 
 cp ${TEXT}/vocab.$src ${TEXT}/vocab.$tgt examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/
 cp ${TEXT}/code.$src ${TEXT}/code.$tgt examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/
-
 
 sed -i -r 's/(@@ )|(@@ ?$)//g' examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/train.raw.$src
 sed -i -r 's/(@@ )|(@@ ?$)//g' examples/translation_decoupled_vocab/data-bin/$EXPERIMENT_NAME/train.raw.$tgt
@@ -192,3 +201,5 @@ CUDA_VISIBLE_DEVICES=$DEVICE; nohup fairseq-train  examples/translation_decouple
                                             --src-dropout $SRC_DROPOUT \
                                             --tgt-dropout $TGT_DROPOUT \
                                             --no-epoch-checkpoints > $EXPERIMENT_NAME.log &
+                                            # --src-threshold $SRC_THRESHOLD \
+                                            # --tgt-threshold $TGT_THRESHOLD \
