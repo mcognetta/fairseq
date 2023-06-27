@@ -22,6 +22,7 @@ SRC_THRESHOLD=0
 TGT_THRESHOLD=0
 SEED=0
 DEVICE=0
+PRESERVE_TERMINALS=false
 
 EXPERIMENT_PREFIX="experiment"
 
@@ -43,6 +44,7 @@ do case $1 in
     shift;;
     --device) DEVICE=$2
     shift;;
+    --preserve-terminals) PRESERVE_TERMINALS=true;;
     --experiment-name) EXPERIMENT_PREFIX="$2"
     shift;;
     *) echo "Unknown parameter passed: $1"
@@ -51,14 +53,14 @@ esac
 shift
 done
 echo "========= PARAMETERS =========== "
-echo -e "SRC_TOKENS $SRC_BPE_TOKENS \nTGT_TOKENS $TGT_BPE_TOKENS \nSRC_THRESHOLD $SRC_THRESHOLD \nTGT_THRESHOLD $TGT_THRESHOLD \nSRC_DROPOUT $SRC_DROPOUT \nTGT_DROPOUT $TGT_DROPOUT \nSEED $SEED \nDEVICE $DEVICE \nNAME $EXPERIMENT_PREFIX"
+echo -e "SRC_TOKENS $SRC_BPE_TOKENS \nTGT_TOKENS $TGT_BPE_TOKENS \nSRC_THRESHOLD $SRC_THRESHOLD \nTGT_THRESHOLD $TGT_THRESHOLD \nSRC_DROPOUT $SRC_DROPOUT \nTGT_DROPOUT $TGT_DROPOUT \nSEED $SEED \nDEVICE $DEVICE \nNAME $EXPERIMENT_PREFIX \nPRESERVE_TERMINALS $PRESERVE_TERMINALS"
 echo "========= PARAMETERS =========== "
 
 src=de
 tgt=en
 lang=de-en
 
-EXPERIMENT_NAME="${EXPERIMENT_PREFIX}_BPE_${SRC_BPE_TOKENS}_${TGT_BPE_TOKENS}_thresholds_${SRC_THRESHOLD}_${TGT_THRESHOLD}_dropout_${SRC_DROPOUT}_${TGT_DROPOUT}_seed_${SEED}.${lang}"
+EXPERIMENT_NAME="${EXPERIMENT_PREFIX}_BPE_${SRC_BPE_TOKENS}_${TGT_BPE_TOKENS}_thresholds_${SRC_THRESHOLD}_${TGT_THRESHOLD}_dropout_${SRC_DROPOUT}_${TGT_DROPOUT}_preserve_terminals_${PRESERVE_TERMINALS}_seed_${SEED}.${lang}"
 
 
 URL="http://dl.fbaipublicfiles.com/fairseq/data/iwslt14/de-en.tgz"
@@ -153,14 +155,29 @@ BPE_VOCAB=$prep/vocab
 #     python3 $BPEROOT/learn_bpe.py -s $BPE_TOKENS < $tmp/train.$l > $BPE_CODE.$l
 # done
 
-echo "learn_BPE for src: $src"
-# python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $SRC_BPE_TOKENS < $tmp/train.$src > $BPE_CODE.$src
-python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$src -s $SRC_BPE_TOKENS --vocabulary-dump-threshold $SRC_THRESHOLD -t -o $BPE_CODE.$src --write-vocabulary $BPE_VOCAB.$src
 
-echo "learn_BPE for tgt: $tgt"
-# python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $TGT_BPE_TOKENS < $tmp/train.$tgt > $BPE_CODE.$tgt
-python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$tgt -s $TGT_BPE_TOKENS --vocabulary-dump-threshold $TGT_THRESHOLD -t -o $BPE_CODE.$tgt --write-vocabulary $BPE_VOCAB.$tgt
+if [ $PRESERVE_TERMINALS = true ] ; then
+    echo "PRESERVE TERMINALS"
+    echo "learn_BPE for src: $src"
+    # python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $SRC_BPE_TOKENS < $tmp/train.$src > $BPE_CODE.$src
+    python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$src -s $SRC_BPE_TOKENS --vocabulary-dump-threshold $SRC_THRESHOLD -t -o $BPE_CODE.$src --preserve-terminals --write-vocabulary $BPE_VOCAB.$src
 
+    echo "learn_BPE for tgt: $tgt"
+    # python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $TGT_BPE_TOKENS < $tmp/train.$tgt > $BPE_CODE.$tgt
+    python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$tgt -s $TGT_BPE_TOKENS --vocabulary-dump-threshold $TGT_THRESHOLD -t -o $BPE_CODE.$tgt --preserve-terminals --write-vocabulary $BPE_VOCAB.$tgt
+
+else
+    echo "DONT PRESERVE TERMINALS"
+    echo "learn_BPE for src: $src"
+    # python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $SRC_BPE_TOKENS < $tmp/train.$src > $BPE_CODE.$src
+    python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$src -s $SRC_BPE_TOKENS --vocabulary-dump-threshold $SRC_THRESHOLD -t -o $BPE_CODE.$src --write-vocabulary $BPE_VOCAB.$src
+
+    echo "learn_BPE for tgt: $tgt"
+    # python3 $BPEROOT/learn_joint_bpe_and_vocab.py -s $TGT_BPE_TOKENS < $tmp/train.$tgt > $BPE_CODE.$tgt
+    python3 $BPEROOT/learn_joint_bpe_and_vocab.py --input $tmp/train.$tgt -s $TGT_BPE_TOKENS --vocabulary-dump-threshold $TGT_THRESHOLD -t -o $BPE_CODE.$tgt --write-vocabulary $BPE_VOCAB.$tgt
+fi
+
+exit 0;
 
 # echo "learn_bpe.py on ${TRAIN}..."
 # python $BPEROOT/learn_bpe.py -s $BPE_TOKENS < $TRAIN > $BPE_CODE

@@ -79,7 +79,7 @@ def create_parser(subparsers=None):
         help="verbose mode.")
     # parser.add_argument('--character-default-increase', type=int, default=1, help="the amount to increase raw character counts. use this so that characters don't get set to unk by the vocabulary-threshold flag")
     parser.add_argument('--vocabulary-dump-threshold', type=int, default=0, help="only write tokens that have count more than this threshold")
-
+    parser.add_argument('--preserve-terminals', action="store_true", help="Whether or not to preserve terminals (subwords that don't appear in larger merges), regardless of frequency.")
     return parser
 
 def learn_joint_bpe_and_vocab(args):
@@ -122,6 +122,18 @@ def learn_joint_bpe_and_vocab(args):
     with codecs.open(args.output.name, encoding='UTF-8') as codes:
         bpe = apply_bpe.BPE(codes, separator=args.separator)
 
+    appears_in_merge = set()
+    with codecs.open(args.output.name, encoding='UTF-8') as codes:
+        for line in codes:
+            l, r = line.strip().split(' ')
+            if '</w>' not in r:
+                r = r + '@@'
+            else:
+                r = r[:-4]
+            l = l + '@@'
+            appears_in_merge.add(l)
+            appears_in_merge.add(r)
+
     # apply BPE to each training corpus and get vocabulary
     for train_file, vocab_file in zip(args.input, args.vocab):
 
@@ -152,7 +164,9 @@ def learn_joint_bpe_and_vocab(args):
                 vocab[c] += 1
 
         for key, freq in sorted(vocab.items(), key=lambda x: x[1], reverse=True):
-            if freq > args.vocabulary_dump_threshold or key in character_vocab:
+            #HERE!
+            # if (freq > args.vocabulary_dump_threshold or key in character_vocab): #and (not args.preserve_terminals
+            if key in character_vocab or freq > args.vocabulary_dump_threshold or (args.preserve_terminals and key not in appears_in_merge):
                 vocab_file.write("{0} {1}\n".format(key, freq))
         train_file.close()
         vocab_file.close()
